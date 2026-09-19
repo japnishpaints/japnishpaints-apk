@@ -1,1 +1,315 @@
+name: Build Japnish Paints APK
 
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: Create Android project
+        run: |
+          mkdir -p app/src/main/java/com/japnishpaints/app
+          mkdir -p app/src/main/res/values
+          mkdir -p app/src/main/res/drawable-nodpi
+
+          printf '%s\n' \
+          'pluginManagement {' \
+          '    repositories {' \
+          '        google()' \
+          '        mavenCentral()' \
+          '        gradlePluginPortal()' \
+          '    }' \
+          '}' \
+          '' \
+          'dependencyResolutionManagement {' \
+          '    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)' \
+          '    repositories {' \
+          '        google()' \
+          '        mavenCentral()' \
+          '    }' \
+          '}' \
+          '' \
+          'rootProject.name = "JapnishPaints"' \
+          'include(":app")' \
+          > settings.gradle
+
+          printf '%s\n' \
+          'plugins {' \
+          '    id '\''com.android.application'\'' version '\''8.6.1'\'' apply false' \
+          '}' \
+          > build.gradle
+
+          printf '%s\n' \
+          'plugins {' \
+          '    id '\''com.android.application'\''' \
+          '}' \
+          '' \
+          'android {' \
+          '    namespace '\''com.japnishpaints.app'\''' \
+          '    compileSdk 35' \
+          '' \
+          '    defaultConfig {' \
+          '        applicationId '\''com.japnishpaints.app'\''' \
+          '        minSdk 23' \
+          '        targetSdk 35' \
+          '        versionCode 2' \
+          '        versionName '\''1.1'\''' \
+          '    }' \
+          '' \
+          '    buildTypes {' \
+          '        release {' \
+          '            minifyEnabled false' \
+          '            shrinkResources false' \
+          '        }' \
+          '        debug {' \
+          '            minifyEnabled false' \
+          '        }' \
+          '    }' \
+          '}' \
+          '' \
+          'dependencies {' \
+          '    implementation '\''androidx.appcompat:appcompat:1.7.0'\''' \
+          '}' \
+          > app/build.gradle
+
+          printf '%s\n' \
+          '<?xml version="1.0" encoding="utf-8"?>' \
+          '<resources>' \
+          '    <string name="app_name">Japnish Paints</string>' \
+          '</resources>' \
+          > app/src/main/res/values/strings.xml
+
+          printf '%s\n' \
+          '<?xml version="1.0" encoding="utf-8"?>' \
+          '<resources>' \
+          '    <style name="AppTheme" parent="android:style/Theme.Material.Light.NoActionBar">' \
+          '        <item name="android:fontFamily">sans</item>' \
+          '        <item name="android:windowLightStatusBar">true</item>' \
+          '        <item name="android:statusBarColor">#FFFFFF</item>' \
+          '        <item name="android:navigationBarColor">#FFFFFF</item>' \
+          '        <item name="android:colorAccent">#0B5ED7</item>' \
+          '    </style>' \
+          '</resources>' \
+          > app/src/main/res/values/styles.xml
+
+          printf '%s\n' \
+          '<?xml version="1.0" encoding="utf-8"?>' \
+          '<manifest xmlns:android="http://schemas.android.com/apk/res/android">' \
+          '' \
+          '    <uses-permission android:name="android.permission.INTERNET" />' \
+          '    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />' \
+          '    <uses-permission android:name="android.permission.CAMERA" />' \
+          '' \
+          '    <application' \
+          '        android:allowBackup="true"' \
+          '        android:label="@string/app_name"' \
+          '        android:icon="@drawable/ic_launcher"' \
+          '        android:roundIcon="@drawable/ic_launcher"' \
+          '        android:theme="@style/AppTheme"' \
+          '        android:usesCleartextTraffic="false"' \
+          '        android:hardwareAccelerated="true">' \
+          '' \
+          '        <activity' \
+          '            android:name=".MainActivity"' \
+          '            android:exported="true"' \
+          '            android:screenOrientation="portrait">' \
+          '' \
+          '            <intent-filter>' \
+          '                <action android:name="android.intent.action.MAIN" />' \
+          '                <category android:name="android.intent.category.LAUNCHER" />' \
+          '            </intent-filter>' \
+          '' \
+          '        </activity>' \
+          '' \
+          '    </application>' \
+          '</manifest>' \
+          > app/src/main/AndroidManifest.xml
+
+          printf '%s\n' \
+          'package com.japnishpaints.app;' \
+          '' \
+          'import android.Manifest;' \
+          'import android.content.Intent;' \
+          'import android.content.pm.PackageManager;' \
+          'import android.net.Uri;' \
+          'import android.os.Bundle;' \
+          'import android.webkit.CookieManager;' \
+          'import android.webkit.PermissionRequest;' \
+          'import android.webkit.WebChromeClient;' \
+          'import android.webkit.WebResourceRequest;' \
+          'import android.webkit.WebSettings;' \
+          'import android.webkit.WebView;' \
+          'import android.webkit.WebViewClient;' \
+          '' \
+          'import androidx.annotation.NonNull;' \
+          'import androidx.appcompat.app.AppCompatActivity;' \
+          '' \
+          'public class MainActivity extends AppCompatActivity {' \
+          '' \
+          '    private WebView webView;' \
+          '    private PermissionRequest pendingPermissionRequest;' \
+          '    private static final int CAMERA_PERMISSION_REQUEST = 1001;' \
+          '' \
+          '    @Override' \
+          '    protected void onCreate(Bundle savedInstanceState) {' \
+          '        super.onCreate(savedInstanceState);' \
+          '' \
+          '        webView = new WebView(this);' \
+          '        setContentView(webView);' \
+          '' \
+          '        WebSettings settings = webView.getSettings();' \
+          '        settings.setJavaScriptEnabled(true);' \
+          '        settings.setDomStorageEnabled(true);' \
+          '        settings.setDatabaseEnabled(true);' \
+          '        settings.setAllowFileAccess(true);' \
+          '        settings.setAllowContentAccess(true);' \
+          '        settings.setBuiltInZoomControls(false);' \
+          '        settings.setDisplayZoomControls(false);' \
+          '        settings.setSupportZoom(false);' \
+          '        settings.setMediaPlaybackRequiresUserGesture(false);' \
+          '' \
+          '        CookieManager cookies = CookieManager.getInstance();' \
+          '        cookies.setAcceptCookie(true);' \
+          '        cookies.setAcceptThirdPartyCookies(webView, true);' \
+          '' \
+          '        webView.setWebViewClient(new WebViewClient() {' \
+          '            @Override' \
+          '            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {' \
+          '                Uri uri = request.getUrl();' \
+          '                String url = uri.toString();' \
+          '                if (url.startsWith("https://japnishpaints.store/")) {' \
+          '                    return false;' \
+          '                }' \
+          '                try {' \
+          '                    startActivity(new Intent(Intent.ACTION_VIEW, uri));' \
+          '                } catch (Exception ignored) {}' \
+          '                return true;' \
+          '            }' \
+          '' \
+          '            @Override' \
+          '            public boolean shouldOverrideUrlLoading(WebView view, String url) {' \
+          '                if (url.startsWith("https://japnishpaints.store/")) {' \
+          '                    return false;' \
+          '                }' \
+          '                try {' \
+          '                    startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));' \
+          '                } catch (Exception ignored) {}' \
+          '                return true;' \
+          '            }' \
+          '        });' \
+          '' \
+          '        webView.setWebChromeClient(new WebChromeClient() {' \
+          '            @Override' \
+          '            public void onPermissionRequest(final PermissionRequest request) {' \
+          '                runOnUiThread(() -> {' \
+          '                    boolean camera = false;' \
+          '                    for (String resource : request.getResources()) {' \
+          '                        if (PermissionRequest.RESOURCE_VIDEO_CAPTURE.equals(resource)) {' \
+          '                            camera = true;' \
+          '                            break;' \
+          '                        }' \
+          '                    }' \
+          '' \
+          '                    if (!camera) {' \
+          '                        request.deny();' \
+          '                        return;' \
+          '                    }' \
+          '' \
+          '                    if (android.os.Build.VERSION.SDK_INT < 23 ||' \
+          '                        checkSelfPermission(Manifest.permission.CAMERA) ==' \
+          '                        PackageManager.PERMISSION_GRANTED) {' \
+          '' \
+          '                        request.grant(new String[]{' \
+          '                            PermissionRequest.RESOURCE_VIDEO_CAPTURE' \
+          '                        });' \
+          '                        return;' \
+          '                    }' \
+          '' \
+          '                    pendingPermissionRequest = request;' \
+          '                    requestPermissions(' \
+          '                        new String[]{Manifest.permission.CAMERA},' \
+          '                        CAMERA_PERMISSION_REQUEST' \
+          '                    );' \
+          '                });' \
+          '            }' \
+          '        });' \
+          '' \
+          '        webView.loadUrl("https://japnishpaints.store/mobile/index.html");' \
+          '    }' \
+          '' \
+          '    @Override' \
+          '    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {' \
+          '        super.onRequestPermissionsResult(requestCode, permissions, grantResults);' \
+          '' \
+          '        if (requestCode == CAMERA_PERMISSION_REQUEST && pendingPermissionRequest != null) {' \
+          '            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {' \
+          '                pendingPermissionRequest.grant(new String[]{' \
+          '                    PermissionRequest.RESOURCE_VIDEO_CAPTURE' \
+          '                });' \
+          '            } else {' \
+          '                pendingPermissionRequest.deny();' \
+          '            }' \
+          '            pendingPermissionRequest = null;' \
+          '        }' \
+          '    }' \
+          '' \
+          '    @Override' \
+          '    public void onBackPressed() {' \
+          '        if (webView != null && webView.canGoBack()) {' \
+          '            webView.goBack();' \
+          '        } else {' \
+          '            super.onBackPressed();' \
+          '        }' \
+          '    }' \
+          '}' \
+          > app/src/main/java/com/japnishpaints/app/MainActivity.java
+
+      - name: Download App Icon
+        run: |
+          curl -fL --retry 3 \
+            "https://japnishpaints.store/mobile/japnish-round-logo.png" \
+            -o app/src/main/res/drawable-nodpi/ic_launcher.png
+
+          test -s app/src/main/res/drawable-nodpi/ic_launcher.png
+
+      - name: Generate Gradle Wrapper
+        run: |
+          gradle wrapper --gradle-version 8.7
+
+      - name: Build APK
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --stacktrace
+
+      - name: Prepare APK
+        run: |
+          mkdir -p output
+          cp app/build/outputs/apk/debug/app-debug.apk output/JapnishPaints.apk
+          ls -lh output/JapnishPaints.apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: JapnishPaints-APK
+          path: output/JapnishPaints.apk
+          if-no-files-found: error
