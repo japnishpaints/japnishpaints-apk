@@ -72,8 +72,8 @@ jobs:
                   applicationId 'com.japnishpaints.app'
                   minSdk 23
                   targetSdk 35
-                  versionCode 2
-                  versionName '1.1'
+                  versionCode 3
+                  versionName '1.2'
               }
 
               buildTypes {
@@ -191,6 +191,11 @@ jobs:
                   settings.setDomStorageEnabled(true);
                   settings.setDatabaseEnabled(true);
 
+                  // Always load fresh website content.
+                  // This helps prevent an old WebView cache from
+                  // causing a blank/white screen.
+                  settings.setCacheMode(WebSettings.LOAD_NO_CACHE);
+
                   settings.setAllowFileAccess(true);
                   settings.setAllowContentAccess(true);
 
@@ -204,6 +209,7 @@ jobs:
                           CookieManager.getInstance();
 
                   cookieManager.setAcceptCookie(true);
+
                   cookieManager.setAcceptThirdPartyCookies(
                           webView,
                           true
@@ -219,11 +225,20 @@ jobs:
                           Uri uri = request.getUrl();
                           String url = uri.toString();
 
+                          // APK files must NEVER be rendered inside WebView.
+                          // Open them using Android's external handler.
+                          if (url.toLowerCase().contains(".apk")) {
+                              openApkExternal(uri);
+                              return true;
+                          }
+
+                          // Keep Japnish Paints website inside the app.
                           if (url.startsWith(
                                   "https://japnishpaints.store/")) {
                               return false;
                           }
 
+                          // Other external links go outside the app.
                           openExternal(uri);
                           return true;
                       }
@@ -233,11 +248,19 @@ jobs:
                               WebView view,
                               String url) {
 
+                          // APK files must NEVER be rendered inside WebView.
+                          if (url.toLowerCase().contains(".apk")) {
+                              openApkExternal(Uri.parse(url));
+                              return true;
+                          }
+
+                          // Keep Japnish Paints website inside the app.
                           if (url.startsWith(
                                   "https://japnishpaints.store/")) {
                               return false;
                           }
 
+                          // Other external links go outside the app.
                           openExternal(Uri.parse(url));
                           return true;
                       }
@@ -332,6 +355,35 @@ jobs:
 
                           pendingCameraRequest = null;
                       }
+                  }
+              }
+
+              private void openApkExternal(Uri uri) {
+
+                  try {
+
+                      Intent intent =
+                              new Intent(Intent.ACTION_VIEW);
+
+                      intent.setDataAndType(
+                              uri,
+                              "application/vnd.android.package-archive"
+                      );
+
+                      intent.addFlags(
+                              Intent.FLAG_ACTIVITY_NEW_TASK
+                      );
+
+                      intent.addFlags(
+                              Intent.FLAG_GRANT_READ_URI_PERMISSION
+                      );
+
+                      startActivity(intent);
+
+                  } catch (Exception ignored) {
+
+                      // Fallback to normal external browser/download.
+                      openExternal(uri);
                   }
               }
 
