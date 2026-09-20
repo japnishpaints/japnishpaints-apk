@@ -1,4 +1,4 @@
-name: Build Japnish Paints APK
+name: Build Japnish Paints Release APK
 
 on:
   workflow_dispatch:
@@ -72,8 +72,18 @@ jobs:
                   applicationId 'com.japnishpaints.app'
                   minSdk 23
                   targetSdk 35
+
                   versionCode 3
                   versionName '1.2'
+              }
+
+              signingConfigs {
+                  release {
+                      storeFile file(System.getenv("JP_KEYSTORE_PATH"))
+                      storePassword System.getenv("JP_KEYSTORE_PASSWORD")
+                      keyAlias System.getenv("JP_KEY_ALIAS")
+                      keyPassword System.getenv("JP_KEY_PASSWORD")
+                  }
               }
 
               buildTypes {
@@ -84,6 +94,7 @@ jobs:
                   release {
                       minifyEnabled false
                       shrinkResources false
+                      signingConfig signingConfigs.release
                   }
               }
           }
@@ -191,10 +202,9 @@ jobs:
                   settings.setDomStorageEnabled(true);
                   settings.setDatabaseEnabled(true);
 
-                  // Always load fresh website content.
-                  // This helps prevent an old WebView cache from
-                  // causing a blank/white screen.
-                  settings.setCacheMode(WebSettings.LOAD_NO_CACHE);
+                  settings.setCacheMode(
+                          WebSettings.LOAD_NO_CACHE
+                  );
 
                   settings.setAllowFileAccess(true);
                   settings.setAllowContentAccess(true);
@@ -215,7 +225,8 @@ jobs:
                           true
                   );
 
-                  webView.setWebViewClient(new WebViewClient() {
+                  webView.setWebViewClient(
+                          new WebViewClient() {
 
                       @Override
                       public boolean shouldOverrideUrlLoading(
@@ -225,21 +236,30 @@ jobs:
                           Uri uri = request.getUrl();
                           String url = uri.toString();
 
-                          // APK files must NEVER be rendered inside WebView.
-                          // Open them using Android's external handler.
+                          /*
+                           * APK update links must NOT open
+                           * inside WebView.
+                           */
                           if (url.toLowerCase().contains(".apk")) {
+
                               openApkExternal(uri);
+
                               return true;
                           }
 
-                          // Keep Japnish Paints website inside the app.
+                          /*
+                           * Japnish Paints website stays
+                           * inside the application.
+                           */
                           if (url.startsWith(
-                                  "https://japnishpaints.store/")) {
+                                  "https://japnishpaints.store/"
+                          )) {
+
                               return false;
                           }
 
-                          // Other external links go outside the app.
                           openExternal(uri);
+
                           return true;
                       }
 
@@ -248,20 +268,30 @@ jobs:
                               WebView view,
                               String url) {
 
-                          // APK files must NEVER be rendered inside WebView.
+                          Uri uri = Uri.parse(url);
+
+                          /*
+                           * APK update link.
+                           */
                           if (url.toLowerCase().contains(".apk")) {
-                              openApkExternal(Uri.parse(url));
+
+                              openApkExternal(uri);
+
                               return true;
                           }
 
-                          // Keep Japnish Paints website inside the app.
+                          /*
+                           * Japnish Paints website.
+                           */
                           if (url.startsWith(
-                                  "https://japnishpaints.store/")) {
+                                  "https://japnishpaints.store/"
+                          )) {
+
                               return false;
                           }
 
-                          // Other external links go outside the app.
-                          openExternal(Uri.parse(url));
+                          openExternal(uri);
+
                           return true;
                       }
                   });
@@ -285,18 +315,22 @@ jobs:
                                           .equals(resource)) {
 
                                       cameraRequested = true;
+
                                       break;
                                   }
                               }
 
                               if (!cameraRequested) {
+
                                   request.deny();
+
                                   return;
                               }
 
                               if (checkSelfPermission(
                                       Manifest.permission.CAMERA
-                              ) == PackageManager.PERMISSION_GRANTED) {
+                              ) == PackageManager
+                                      .PERMISSION_GRANTED) {
 
                                   request.grant(
                                           new String[]{
@@ -319,43 +353,6 @@ jobs:
                           });
                       }
                   });
-              }
-
-              @Override
-              public void onRequestPermissionsResult(
-                      int requestCode,
-                      String[] permissions,
-                      int[] grantResults) {
-
-                  super.onRequestPermissionsResult(
-                          requestCode,
-                          permissions,
-                          grantResults
-                  );
-
-                  if (requestCode == CAMERA_PERMISSION) {
-
-                      if (pendingCameraRequest != null) {
-
-                          if (grantResults.length > 0 &&
-                                  grantResults[0] ==
-                                          PackageManager.PERMISSION_GRANTED) {
-
-                              pendingCameraRequest.grant(
-                                      new String[]{
-                                          PermissionRequest
-                                              .RESOURCE_VIDEO_CAPTURE
-                                      }
-                              );
-
-                          } else {
-
-                              pendingCameraRequest.deny();
-                          }
-
-                          pendingCameraRequest = null;
-                      }
-                  }
               }
 
               private void openApkExternal(Uri uri) {
@@ -382,7 +379,6 @@ jobs:
 
                   } catch (Exception ignored) {
 
-                      // Fallback to normal external browser/download.
                       openExternal(uri);
                   }
               }
@@ -404,6 +400,45 @@ jobs:
               }
 
               @Override
+              public void onRequestPermissionsResult(
+                      int requestCode,
+                      String[] permissions,
+                      int[] grantResults) {
+
+                  super.onRequestPermissionsResult(
+                          requestCode,
+                          permissions,
+                          grantResults
+                  );
+
+                  if (requestCode ==
+                          CAMERA_PERMISSION) {
+
+                      if (pendingCameraRequest != null) {
+
+                          if (grantResults.length > 0 &&
+                                  grantResults[0] ==
+                                          PackageManager
+                                              .PERMISSION_GRANTED) {
+
+                              pendingCameraRequest.grant(
+                                      new String[]{
+                                          PermissionRequest
+                                              .RESOURCE_VIDEO_CAPTURE
+                                      }
+                              );
+
+                          } else {
+
+                              pendingCameraRequest.deny();
+                          }
+
+                          pendingCameraRequest = null;
+                      }
+                  }
+              }
+
+              @Override
               public void onBackPressed() {
 
                   if (webView != null &&
@@ -421,6 +456,7 @@ jobs:
               protected void onDestroy() {
 
                   if (webView != null) {
+
                       webView.destroy();
                   }
 
@@ -441,23 +477,49 @@ jobs:
             exit 1
           fi
 
+      - name: Decode release keystore
+        shell: bash
+        env:
+          JP_KEYSTORE_B64: ${{ secrets.JP_KEYSTORE_B64 }}
+        run: |
+          if [ -z "$JP_KEYSTORE_B64" ]; then
+            echo "ERROR: JP_KEYSTORE_B64 GitHub Secret is missing."
+            exit 1
+          fi
+
+          echo "$JP_KEYSTORE_B64" | base64 --decode > japnish-release.jks
+
+          if [ ! -s japnish-release.jks ]; then
+            echo "ERROR: Keystore could not be decoded."
+            exit 1
+          fi
+
+          echo "JP_KEYSTORE_PATH=$GITHUB_WORKSPACE/japnish-release.jks" >> "$GITHUB_ENV"
+
+          echo "JP_KEYSTORE_PASSWORD=${{ secrets.JP_KEYSTORE_PASSWORD }}" >> "$GITHUB_ENV"
+
+          echo "JP_KEY_ALIAS=${{ secrets.JP_KEY_ALIAS }}" >> "$GITHUB_ENV"
+
+          echo "JP_KEY_PASSWORD=${{ secrets.JP_KEY_PASSWORD }}" >> "$GITHUB_ENV"
+
       - name: Generate Gradle Wrapper
         shell: bash
         run: |
           gradle wrapper --gradle-version 8.7
 
-      - name: Build APK
+      - name: Build signed release APK
         shell: bash
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug --stacktrace
+
+          ./gradlew assembleRelease --stacktrace
 
       - name: Prepare APK
         shell: bash
         run: |
           mkdir -p output
 
-          cp app/build/outputs/apk/debug/app-debug.apk \
+          cp app/build/outputs/apk/release/app-release.apk \
             output/JapnishPaints.apk
 
           ls -lh output/JapnishPaints.apk
