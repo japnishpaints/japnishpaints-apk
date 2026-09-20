@@ -1,4 +1,4 @@
-name: Build Japnish Paints Release APK
+name: Build Japnish Paints APK
 
 on:
   workflow_dispatch:
@@ -11,26 +11,53 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+
+      # =========================================================
+      # 1. CHECKOUT
+      # =========================================================
+      - name: Checkout repository
         uses: actions/checkout@v4
 
+
+      # =========================================================
+      # 2. JAVA 17
+      # =========================================================
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
+
+      # =========================================================
+      # 3. GRADLE
+      # =========================================================
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.7'
 
+
+      # =========================================================
+      # 4. CREATE ANDROID PROJECT
+      # =========================================================
       - name: Create Android project
         shell: bash
         run: |
+
+          set -e
+
           mkdir -p app/src/main/java/com/japnishpaints/app
           mkdir -p app/src/main/res/values
           mkdir -p app/src/main/res/drawable-nodpi
+
+
+      # =========================================================
+      # 5. SETTINGS GRADLE
+      # =========================================================
+      - name: Create settings.gradle
+        shell: bash
+        run: |
 
           cat > settings.gradle <<'EOF'
           pluginManagement {
@@ -43,6 +70,7 @@ jobs:
 
           dependencyResolutionManagement {
               repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+
               repositories {
                   google()
                   mavenCentral()
@@ -50,8 +78,17 @@ jobs:
           }
 
           rootProject.name = "JapnishPaints"
+
           include(":app")
           EOF
+
+
+      # =========================================================
+      # 6. ROOT BUILD GRADLE
+      # =========================================================
+      - name: Create root build.gradle
+        shell: bash
+        run: |
 
           cat > build.gradle <<'EOF'
           plugins {
@@ -59,93 +96,173 @@ jobs:
           }
           EOF
 
+
+      # =========================================================
+      # 7. APP BUILD GRADLE
+      # =========================================================
+      - name: Create app build.gradle
+        shell: bash
+        run: |
+
           cat > app/build.gradle <<'EOF'
           plugins {
               id 'com.android.application'
           }
 
           android {
+
               namespace 'com.japnishpaints.app'
+
               compileSdk 35
 
               defaultConfig {
+
                   applicationId 'com.japnishpaints.app'
+
                   minSdk 23
+
                   targetSdk 35
 
-                  versionCode 3
-                  versionName '1.2'
-              }
+                  versionCode 69
 
-              signingConfigs {
-                  release {
-                      storeFile file(System.getenv("JP_KEYSTORE_PATH"))
-                      storePassword System.getenv("JP_KEYSTORE_PASSWORD")
-                      keyAlias System.getenv("JP_KEY_ALIAS")
-                      keyPassword System.getenv("JP_KEY_PASSWORD")
-                  }
+                  versionName '69.0.0'
               }
 
               buildTypes {
+
                   debug {
+
                       minifyEnabled false
                   }
 
                   release {
+
                       minifyEnabled false
+
                       shrinkResources false
-                      signingConfig signingConfigs.release
                   }
               }
           }
           EOF
 
+
+      # =========================================================
+      # 8. STRINGS
+      # =========================================================
+      - name: Create strings.xml
+        shell: bash
+        run: |
+
           cat > app/src/main/res/values/strings.xml <<'EOF'
           <?xml version="1.0" encoding="utf-8"?>
+
           <resources>
-              <string name="app_name">Japnish Paints</string>
+
+              <string name="app_name">
+                  Japnish Paints
+              </string>
+
           </resources>
           EOF
 
+
+      # =========================================================
+      # 9. STYLE
+      # =========================================================
+      - name: Create styles.xml
+        shell: bash
+        run: |
+
           cat > app/src/main/res/values/styles.xml <<'EOF'
           <?xml version="1.0" encoding="utf-8"?>
+
           <resources>
-              <style name="AppTheme" parent="android:style/Theme.Material.Light.NoActionBar">
+
+              <style
+                  name="AppTheme"
+                  parent="android:style/Theme.Material.Light.NoActionBar">
+
                   <item name="android:fontFamily">sans</item>
-                  <item name="android:windowLightStatusBar">true</item>
-                  <item name="android:statusBarColor">#FFFFFF</item>
-                  <item name="android:navigationBarColor">#FFFFFF</item>
-                  <item name="android:colorAccent">#0B5ED7</item>
+
+                  <item name="android:windowLightStatusBar">
+                      true
+                  </item>
+
+                  <item name="android:statusBarColor">
+                      #FFFFFF
+                  </item>
+
+                  <item name="android:navigationBarColor">
+                      #FFFFFF
+                  </item>
+
+                  <item name="android:colorAccent">
+                      #0B5ED7
+                  </item>
+
               </style>
+
           </resources>
           EOF
+
+
+      # =========================================================
+      # 10. ANDROID MANIFEST
+      # =========================================================
+      - name: Create AndroidManifest.xml
+        shell: bash
+        run: |
 
           cat > app/src/main/AndroidManifest.xml <<'EOF'
           <?xml version="1.0" encoding="utf-8"?>
 
-          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+          <manifest
+              xmlns:android="http://schemas.android.com/apk/res/android">
 
-              <uses-permission android:name="android.permission.INTERNET" />
-              <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-              <uses-permission android:name="android.permission.CAMERA" />
+              <uses-permission
+                  android:name="android.permission.INTERNET" />
+
+              <uses-permission
+                  android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+              <uses-permission
+                  android:name="android.permission.CAMERA" />
+
 
               <application
+
                   android:allowBackup="true"
+
                   android:label="@string/app_name"
+
                   android:icon="@drawable/ic_launcher"
+
                   android:roundIcon="@drawable/ic_launcher"
+
                   android:theme="@style/AppTheme"
+
                   android:usesCleartextTraffic="false"
+
                   android:hardwareAccelerated="true">
 
+
                   <activity
+
                       android:name=".MainActivity"
+
                       android:exported="true"
+
                       android:screenOrientation="portrait">
 
+
                       <intent-filter>
-                          <action android:name="android.intent.action.MAIN" />
-                          <category android:name="android.intent.category.LAUNCHER" />
+
+                          <action
+                              android:name="android.intent.action.MAIN" />
+
+                          <category
+                              android:name="android.intent.category.LAUNCHER" />
+
                       </intent-filter>
 
                   </activity>
@@ -154,6 +271,28 @@ jobs:
 
           </manifest>
           EOF
+
+
+      # =========================================================
+      # 11. DOWNLOAD JAPNISH PAINTS LOGO
+      # =========================================================
+      - name: Download app icon
+        shell: bash
+        run: |
+
+          curl -fL --retry 5 \
+            "https://japnishpaints.store/mobile/japnish-round-logo.png" \
+            -o app/src/main/res/drawable-nodpi/ic_launcher.png
+
+          test -s app/src/main/res/drawable-nodpi/ic_launcher.png
+
+
+      # =========================================================
+      # 12. MAIN ACTIVITY
+      # =========================================================
+      - name: Create MainActivity.java
+        shell: bash
+        run: |
 
           cat > app/src/main/java/com/japnishpaints/app/MainActivity.java <<'EOF'
           package com.japnishpaints.app;
@@ -164,6 +303,7 @@ jobs:
           import android.content.pm.PackageManager;
           import android.net.Uri;
           import android.os.Bundle;
+
           import android.webkit.CookieManager;
           import android.webkit.PermissionRequest;
           import android.webkit.WebChromeClient;
@@ -172,21 +312,28 @@ jobs:
           import android.webkit.WebView;
           import android.webkit.WebViewClient;
 
+
           public class MainActivity extends Activity {
 
+
               private WebView webView;
+
               private PermissionRequest pendingCameraRequest;
 
               private static final int CAMERA_PERMISSION = 1001;
 
+
               private static final String APP_URL =
                       "https://japnishpaints.store/mobile/index.html";
 
+
               @Override
               protected void onCreate(Bundle savedInstanceState) {
+
                   super.onCreate(savedInstanceState);
 
                   webView = new WebView(this);
+
                   setContentView(webView);
 
                   setupWebView();
@@ -194,121 +341,131 @@ jobs:
                   webView.loadUrl(APP_URL);
               }
 
+
               private void setupWebView() {
 
-                  WebSettings settings = webView.getSettings();
+
+                  WebSettings settings =
+                          webView.getSettings();
+
 
                   settings.setJavaScriptEnabled(true);
+
                   settings.setDomStorageEnabled(true);
+
                   settings.setDatabaseEnabled(true);
 
-                  settings.setCacheMode(
-                          WebSettings.LOAD_NO_CACHE
-                  );
 
                   settings.setAllowFileAccess(true);
+
                   settings.setAllowContentAccess(true);
 
+
                   settings.setBuiltInZoomControls(false);
+
                   settings.setDisplayZoomControls(false);
+
                   settings.setSupportZoom(false);
 
+
                   settings.setMediaPlaybackRequiresUserGesture(false);
+
 
                   CookieManager cookieManager =
                           CookieManager.getInstance();
 
+
                   cookieManager.setAcceptCookie(true);
+
 
                   cookieManager.setAcceptThirdPartyCookies(
                           webView,
                           true
                   );
 
+
                   webView.setWebViewClient(
                           new WebViewClient() {
+
 
                       @Override
                       public boolean shouldOverrideUrlLoading(
                               WebView view,
                               WebResourceRequest request) {
 
+
                           Uri uri = request.getUrl();
+
                           String url = uri.toString();
 
-                          /*
-                           * APK update links must NOT open
-                           * inside WebView.
-                           */
+
                           if (url.toLowerCase().contains(".apk")) {
 
-                              openApkExternal(uri);
+                              openExternal(uri);
 
                               return true;
                           }
 
-                          /*
-                           * Japnish Paints website stays
-                           * inside the application.
-                           */
+
                           if (url.startsWith(
-                                  "https://japnishpaints.store/"
-                          )) {
+                                  "https://japnishpaints.store/")) {
 
                               return false;
                           }
+
 
                           openExternal(uri);
 
                           return true;
                       }
+
 
                       @Override
                       public boolean shouldOverrideUrlLoading(
                               WebView view,
                               String url) {
 
-                          Uri uri = Uri.parse(url);
 
-                          /*
-                           * APK update link.
-                           */
                           if (url.toLowerCase().contains(".apk")) {
 
-                              openApkExternal(uri);
+                              openExternal(Uri.parse(url));
 
                               return true;
                           }
 
-                          /*
-                           * Japnish Paints website.
-                           */
+
                           if (url.startsWith(
-                                  "https://japnishpaints.store/"
-                          )) {
+                                  "https://japnishpaints.store/")) {
 
                               return false;
                           }
 
-                          openExternal(uri);
+
+                          openExternal(Uri.parse(url));
 
                           return true;
                       }
                   });
 
+
                   webView.setWebChromeClient(
                           new WebChromeClient() {
+
 
                       @Override
                       public void onPermissionRequest(
                               final PermissionRequest request) {
 
+
                           runOnUiThread(() -> {
+
 
                               boolean cameraRequested = false;
 
+
                               for (String resource :
                                       request.getResources()) {
+
 
                                   if (PermissionRequest
                                           .RESOURCE_VIDEO_CAPTURE
@@ -320,6 +477,7 @@ jobs:
                                   }
                               }
 
+
                               if (!cameraRequested) {
 
                                   request.deny();
@@ -327,10 +485,11 @@ jobs:
                                   return;
                               }
 
+
                               if (checkSelfPermission(
                                       Manifest.permission.CAMERA
-                              ) == PackageManager
-                                      .PERMISSION_GRANTED) {
+                              ) == PackageManager.PERMISSION_GRANTED) {
+
 
                                   request.grant(
                                           new String[]{
@@ -342,7 +501,9 @@ jobs:
                                   return;
                               }
 
+
                               pendingCameraRequest = request;
+
 
                               requestPermissions(
                                       new String[]{
@@ -350,38 +511,57 @@ jobs:
                                       },
                                       CAMERA_PERMISSION
                               );
+
                           });
                       }
                   });
               }
 
-              private void openApkExternal(Uri uri) {
 
-                  try {
+              @Override
+              public void onRequestPermissionsResult(
+                      int requestCode,
+                      String[] permissions,
+                      int[] grantResults) {
 
-                      Intent intent =
-                              new Intent(Intent.ACTION_VIEW);
 
-                      intent.setDataAndType(
-                              uri,
-                              "application/vnd.android.package-archive"
-                      );
+                  super.onRequestPermissionsResult(
+                          requestCode,
+                          permissions,
+                          grantResults
+                  );
 
-                      intent.addFlags(
-                              Intent.FLAG_ACTIVITY_NEW_TASK
-                      );
 
-                      intent.addFlags(
-                              Intent.FLAG_GRANT_READ_URI_PERMISSION
-                      );
+                  if (requestCode == CAMERA_PERMISSION) {
 
-                      startActivity(intent);
 
-                  } catch (Exception ignored) {
+                      if (pendingCameraRequest != null) {
 
-                      openExternal(uri);
+
+                          if (grantResults.length > 0 &&
+                                  grantResults[0] ==
+                                          PackageManager.PERMISSION_GRANTED) {
+
+
+                              pendingCameraRequest.grant(
+                                      new String[]{
+                                          PermissionRequest
+                                              .RESOURCE_VIDEO_CAPTURE
+                                      }
+                              );
+
+
+                          } else {
+
+                              pendingCameraRequest.deny();
+                          }
+
+
+                          pendingCameraRequest = null;
+                      }
                   }
               }
+
 
               private void openExternal(Uri uri) {
 
@@ -399,47 +579,10 @@ jobs:
                   }
               }
 
-              @Override
-              public void onRequestPermissionsResult(
-                      int requestCode,
-                      String[] permissions,
-                      int[] grantResults) {
-
-                  super.onRequestPermissionsResult(
-                          requestCode,
-                          permissions,
-                          grantResults
-                  );
-
-                  if (requestCode ==
-                          CAMERA_PERMISSION) {
-
-                      if (pendingCameraRequest != null) {
-
-                          if (grantResults.length > 0 &&
-                                  grantResults[0] ==
-                                          PackageManager
-                                              .PERMISSION_GRANTED) {
-
-                              pendingCameraRequest.grant(
-                                      new String[]{
-                                          PermissionRequest
-                                              .RESOURCE_VIDEO_CAPTURE
-                                      }
-                              );
-
-                          } else {
-
-                              pendingCameraRequest.deny();
-                          }
-
-                          pendingCameraRequest = null;
-                      }
-                  }
-              }
 
               @Override
               public void onBackPressed() {
+
 
                   if (webView != null &&
                           webView.canGoBack()) {
@@ -452,81 +595,115 @@ jobs:
                   }
               }
 
+
               @Override
               protected void onDestroy() {
+
 
                   if (webView != null) {
 
                       webView.destroy();
                   }
 
+
                   super.onDestroy();
               }
           }
           EOF
 
-      - name: Download Japnish Paints App Icon
-        shell: bash
-        run: |
-          curl -fL --retry 3 \
-            "https://japnishpaints.store/mobile/japnish-round-logo.png" \
-            -o app/src/main/res/drawable-nodpi/ic_launcher.png
 
-          if [ ! -s app/src/main/res/drawable-nodpi/ic_launcher.png ]; then
-            echo "ERROR: App icon download failed"
-            exit 1
-          fi
-
-      - name: Decode release keystore
-        shell: bash
-        env:
-          JP_KEYSTORE_B64: ${{ secrets.JP_KEYSTORE_B64 }}
-        run: |
-          if [ -z "$JP_KEYSTORE_B64" ]; then
-            echo "ERROR: JP_KEYSTORE_B64 GitHub Secret is missing."
-            exit 1
-          fi
-
-          echo "$JP_KEYSTORE_B64" | base64 --decode > japnish-release.jks
-
-          if [ ! -s japnish-release.jks ]; then
-            echo "ERROR: Keystore could not be decoded."
-            exit 1
-          fi
-
-          echo "JP_KEYSTORE_PATH=$GITHUB_WORKSPACE/japnish-release.jks" >> "$GITHUB_ENV"
-
-          echo "JP_KEYSTORE_PASSWORD=${{ secrets.JP_KEYSTORE_PASSWORD }}" >> "$GITHUB_ENV"
-
-          echo "JP_KEY_ALIAS=${{ secrets.JP_KEY_ALIAS }}" >> "$GITHUB_ENV"
-
-          echo "JP_KEY_PASSWORD=${{ secrets.JP_KEY_PASSWORD }}" >> "$GITHUB_ENV"
-
+      # =========================================================
+      # 13. GRADLE WRAPPER
+      # =========================================================
       - name: Generate Gradle Wrapper
         shell: bash
         run: |
+
           gradle wrapper --gradle-version 8.7
 
-      - name: Build signed release APK
+
+      # =========================================================
+      # 14. BUILD DEBUG APK
+      # =========================================================
+      - name: Build APK
         shell: bash
         run: |
+
           chmod +x gradlew
 
-          ./gradlew assembleRelease --stacktrace
+          ./gradlew assembleDebug \
+            --no-daemon \
+            --stacktrace
 
+
+      # =========================================================
+      # 15. PREPARE APK
+      # =========================================================
       - name: Prepare APK
         shell: bash
         run: |
+
+          set -e
+
           mkdir -p output
 
-          cp app/build/outputs/apk/release/app-release.apk \
-            output/JapnishPaints.apk
+          cp \
+            app/build/outputs/apk/debug/app-debug.apk \
+            output/JapnishPaints-v69-debug.apk
 
-          ls -lh output/JapnishPaints.apk
 
+          echo "===================================="
+
+          echo "JAPNISH PAINTS APK CREATED"
+
+          echo "===================================="
+
+          ls -lh output/JapnishPaints-v69-debug.apk
+
+
+      # =========================================================
+      # 16. VERIFY APK
+      # =========================================================
+      - name: Verify APK
+        shell: bash
+        run: |
+
+          echo "===================================="
+
+          echo "APK INFORMATION"
+
+          echo "===================================="
+
+
+          $ANDROID_HOME/build-tools/35.0.0/apksigner \
+            verify \
+            --verbose \
+            output/JapnishPaints-v69-debug.apk
+
+
+          echo "===================================="
+
+          echo "APK SIGNING CERTIFICATE"
+
+          echo "===================================="
+
+
+          $ANDROID_HOME/build-tools/35.0.0/apksigner \
+            verify \
+            --print-certs \
+            output/JapnishPaints-v69-debug.apk
+
+
+      # =========================================================
+      # 17. UPLOAD APK
+      # =========================================================
       - name: Upload APK
         uses: actions/upload-artifact@v4
+
         with:
-          name: JapnishPaints-APK
-          path: output/JapnishPaints.apk
+
+          name: JapnishPaints-APK-v69
+
+          path: output/JapnishPaints-v69-debug.apk
+
           if-no-files-found: error
